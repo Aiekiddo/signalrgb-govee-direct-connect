@@ -44,7 +44,7 @@ Item {
 					placeholderText: "192.168.0.1"
 					
 					validator: RegularExpressionValidator {
-						regularExpression:  /^((?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\.){0,3}(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$/
+						regularExpression:  /^(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?:\.(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])){3}$/
 					}
 					background: Item {
 						width: parent.width
@@ -182,7 +182,9 @@ Item {
 					text: "Add"
 					anchors.right: parent.center
 					onClicked: {
-						discovery.forceDiscover(discoverIP.text, ledCount.text, lightType.currentValue, splitDevice.currentValue);
+						if (discoverIP.acceptableInput && ledCount.acceptableInput) {
+							discovery.forceDiscover(discoverIP.text, ledCount.text, lightType.currentValue, splitDevice.currentValue);
+						}
 					}
 				}
 			}
@@ -515,8 +517,9 @@ Item {
 							onClicked: {
 								if (this.enabled) // dunno if this is needed btw
 								{
-									controller.updateDevice(ledCount.text, lightType.currentValue, splitDevice.currentValue, changeIPAddressTo.text);
-									updateButton.enabled = false;
+									if (discovery.updateDevice(controller, ledCount.text, lightType.currentValue, splitDevice.currentValue, changeIPAddressTo.text)) {
+										updateButton.enabled = false;
+									}
 								}
 							}
 						}

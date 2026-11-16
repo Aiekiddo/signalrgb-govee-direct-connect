@@ -5,7 +5,7 @@ import GoveeController from "./GoveeController.test.js";
 import GoveeDeviceUI from "./GoveeDeviceUI.test.js";
 
 export function Name() { return "Govee Direct Connect"; }
-export function Version() { return "2.1.4"; }
+export function Version() { return "2.1.5"; }
 export function Type() { return "network"; }
 export function Publisher() { return "RickOfficial"; }
 export function Size() { return [1, 1]; }
@@ -93,6 +93,18 @@ export function DiscoveryService()
 
     this.forceDiscover = function(ip, leds, type, split)
     {
+        if (!isValidIPv4(ip) || !isValidLedCount(leds) || !isValidProtocol(type) || !isValidSplit(split))
+        {
+            service.log('Cannot add Govee device: enter a valid IPv4 address, LED count, protocol, and layout');
+            return false;
+        }
+
+        if (this.GoveeDeviceControllers[ip])
+        {
+            service.log('A Govee device is already configured for ' + ip);
+            return false;
+        }
+
         let goveeLightData = { 
             ip: ip,
             leds: parseInt(leds),
@@ -105,6 +117,7 @@ export function DiscoveryService()
 
         this.saveCache();
         this.Update(true);
+        return true;
     }
 
     this.loadForcedDevices = function()
@@ -112,13 +125,35 @@ export function DiscoveryService()
         // Load the cached ips
         let ipCacheJSON = service.getSetting('ipCache', 'cache');
         let ipCache = {};
-        if (ipCacheJSON) ipCache = JSON.parse(ipCacheJSON);
+        if (ipCacheJSON)
+        {
+            try
+            {
+                ipCache = JSON.parse(ipCacheJSON);
+                if (!ipCache || typeof ipCache !== 'object' || Array.isArray(ipCache))
+                {
+                    throw new Error('cache must be a JSON object');
+                }
+            } catch (error)
+            {
+                service.log('Ignoring invalid Govee device cache: ' + error.message);
+                ipCache = {};
+            }
+        }
 
         // Get all cached ips
         let cachedIps = Object.keys(ipCache);
         
         for(let cachedIp of cachedIps)
         {
+            const entry = ipCache[cachedIp];
+            if (!entry || !isValidIPv4(entry.ip) || !isValidLedCount(entry.leds) ||
+                !isValidProtocol(entry.type) || !isValidSplit(entry.split))
+            {
+                service.log('Skipping invalid cached Govee device: ' + cachedIp);
+                continue;
+            }
+
             // If Controller is not yet created
             if (!this.GoveeDeviceControllers.hasOwnProperty(cachedIp))
             {
@@ -192,6 +227,38 @@ export function DiscoveryService()
         this.Update(true);
     }
 
+    this.updateDevice = function(controller, leds, type, split, ip)
+    {
+        if (!controller || !isValidIPv4(ip) || !isValidLedCount(leds) ||
+            !isValidProtocol(type) || !isValidSplit(split))
+        {
+            service.log('Cannot update Govee device: invalid address, LED count, protocol, or layout');
+            return false;
+        }
+
+        const oldIp = controller.id;
+        const existing = this.GoveeDeviceControllers[ip];
+        if (existing && existing !== controller)
+        {
+            service.log('Cannot change Govee IP: ' + ip + ' is already configured');
+            return false;
+        }
+
+        controller.updateDevice(parseInt(leds), parseInt(type), parseInt(split), ip);
+        if (oldIp !== ip)
+        {
+            delete this.GoveeDeviceControllers[oldIp];
+            this.GoveeDeviceControllers[ip] = controller;
+        }
+
+        this.saveCache();
+        service.removeController(controller);
+        service.addController(controller);
+        service.announceController(controller);
+        this.startSocketServer();
+        return true;
+    }
+
     this.changeIp = function(oldIp, newIp)
     {
         if (this.GoveeDeviceControllers.hasOwnProperty(oldIp))
@@ -216,6 +283,7 @@ export function DiscoveryService()
     this.removeController = function(ip)
     {
         let goveeController = this.GoveeDeviceControllers[ip];
+        if (!goveeController) return;
         service.removeController(goveeController);
         delete this.GoveeDeviceControllers[ip];
     }
@@ -279,6 +347,32 @@ export function DiscoveryService()
         this.startSocketServer();
 
     }
+}
+
+function isValidIPv4(ip)
+{
+    if (typeof ip !== 'string') return false;
+    const parts = ip.split('.');
+    return parts.length === 4 && parts.every(part =>
+        /^(0|[1-9][0-9]{0,2})$/.test(part) && parseInt(part, 10) <= 255);
+}
+
+function isValidLedCount(leds)
+{
+    const count = parseInt(leds, 10);
+    return Number.isInteger(count) && count >= 1 && count <= 500 && String(count) === String(leds).trim();
+}
+
+function isValidProtocol(type)
+{
+    const protocol = Number(type);
+    return Number.isInteger(protocol) && protocol >= 1 && protocol <= 5;
+}
+
+function isValidSplit(split)
+{
+    const layout = Number(split);
+    return Number.isInteger(layout) && layout >= 1 && layout <= 4;
 }
 
 function getGoveeLogo()

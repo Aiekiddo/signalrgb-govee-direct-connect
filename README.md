@@ -1,6 +1,6 @@
 # Govee Direct Connect
 
-[![Click here to add this repo to SignalRGB](https://raw.githubusercontent.com/SRGBmods/QMK-Images/main/images/add-to-signalrgb.png)](https://srgbmods.net/s?p=addon/install?url=https://github.com/fu-raz/signalrgb-govee-direct-connect)
+[![Click here to add this repo to SignalRGB](https://raw.githubusercontent.com/SRGBmods/QMK-Images/main/images/add-to-signalrgb.png)](https://srgbmods.net/s?p=addon/install?url=https://github.com/Aiekiddo/signalrgb-govee-direct-connect)
 
 ## Getting started
 This SignalRGB Addon allows you to add Govee devices via a direct IP connection. You control the amount of leds of the device and what protocol is used to communicate with the device. You can even use components to build your exact Govee Glide setup.
@@ -17,7 +17,21 @@ If you have a more complex device like the Glide (H6062), you can select 'Custom
 - Sometimes the bars don't turn off when you shut down SignalRGB
 
 ## Installation
-Click the button above and allow signalrgb to install this extension when prompted.
+Click the **Add to SignalRGB** button above and accept the prompt. Restart SignalRGB
+after installation, open the **Network** devices page, and use **Govee Direct
+Connect** to add a light by its reserved IPv4 address. The extension and its
+settings page are installed together; installing only `GoveeDirectConnect.js`
+as a USB plugin will not install this network addon.
+
+In the Govee app, connect the light to Wi-Fi, refresh its light segments, and
+enable **LAN Control** before adding it. Keep the device IP reserved in your
+router so the saved configuration continues to point to the same light.
+
+The add and update controls validate complete IPv4 addresses and supported
+settings. If a saved cache entry is invalid, the addon skips that entry and
+continues loading the rest of the configured devices. Changing an IP updates
+the discovery entry immediately; an IP already assigned to another configured
+light cannot be used.
 
 ## Support
 Feel free to open issues here, or join the SignalRGB Testing Server and post an issue there https://discord.com/invite/J5dwtcNhqC. Don't forget to tag me @rickofficial

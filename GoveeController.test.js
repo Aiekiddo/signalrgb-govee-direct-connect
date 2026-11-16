@@ -18,11 +18,18 @@ export default class GoveeController
 
     validateDeviceUpdate(leds, type, split, ip)
     {
+        let parsedLeds = parseInt(leds, 10);
+        let parsedType = Number(type);
+        let parsedSplit = Number(split);
         return (
-            leds != this.device.leds || 
-            type != this.device.type || 
-            split != this.device.split || 
-            ip != this.device.ip
+            isValidIPv4(ip) &&
+            Number.isInteger(parsedLeds) && parsedLeds >= 1 && parsedLeds <= 500 &&
+            Number.isInteger(parsedType) && parsedType >= 1 && parsedType <= 5 &&
+            Number.isInteger(parsedSplit) && parsedSplit >= 1 && parsedSplit <= 4 &&
+            (parsedLeds != this.device.leds ||
+            parsedType != this.device.type ||
+            parsedSplit != this.device.split ||
+            ip != this.device.ip)
         );
     }
 
@@ -110,4 +117,12 @@ export default class GoveeController
             this.udpSocket.on('error', this.handleSocketError.bind(this));
         }
     }
+}
+
+function isValidIPv4(ip)
+{
+    if (typeof ip !== 'string') return false;
+    const parts = ip.split('.');
+    return parts.length === 4 && parts.every(part =>
+        /^(0|[1-9][0-9]{0,2})$/.test(part) && parseInt(part, 10) <= 255);
 }
